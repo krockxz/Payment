@@ -3,6 +3,7 @@
 A full-stack application for managing cheques and cash records with real-time payments and email notifications.
 
 ## 🌐 Live Application
+Your free instance will spin down with inactivity, which can delay requests by 50 seconds or more.Click the Render link first and then the Vercel.
 
 **Frontend (Next.js):** https://cheque-management-frontend-r9z4ctkc2-krockxzs-projects.vercel.app
 **Backend API (Express):** https://payment-yjxf.onrender.com
