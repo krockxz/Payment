@@ -1,59 +1,79 @@
-# Cheque Management System - Backend API
+# Cheque Management System
 
-Express.js backend for managing cheques and cash records with SQLite database.
+A full-stack application for managing cheques and cash records with real-time payments and email notifications.
+
+## 🌐 Live Application
+
+**Frontend (Next.js):** https://cheque-management-frontend-24yh3wdwe-krockxzs-projects.vercel.app
+**Backend API (Express):** https://payment-yjxf.onrender.com
+
+## 🏗️ Architecture
+
+- **Frontend:** Next.js 16 with TypeScript, Tailwind CSS, Radix UI
+- **Backend:** Express.js with SQLite database
+- **Payments:** Razorpay integration
+- **Email:** Resend API for notifications
+- **Deployment:** Vercel (frontend) + Render (backend, free tier)
 
 ## 🚀 Quick Start
 
-### Installation
+### Backend Setup
 
 ```bash
+# Install dependencies
 npm install
-```
 
-### Configuration
+# Copy environment template
+cp .env.example .env
 
-Copy `.env.example` to `.env` and configure:
-
-```bash
+# Required environment variables
 PORT=5000
-NODE_ENV=development
-DATABASE_PATH=./cheque_management.db
-FRONTEND_URL=http://localhost:3000
-```
+NODE_ENV=production
+DATABASE_PATH=./cheques.db
+FRONTEND_URL=https://your-frontend-url.vercel.app
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+RESEND_API_KEY=your_resend_api_key
+REMINDER_EMAIL=your-email@example.com
 
-### Running the Server
-
-**Development mode (with auto-reload):**
-```bash
-npm run dev
-```
-
-**Production mode:**
-```bash
+# Start server
 npm start
 ```
 
-The server will start on `http://localhost:5000` (or the PORT specified in `.env`)
+### Frontend Setup
 
-## 📋 API Endpoints
+```bash
+cd cheque-management-frontend
+npm install
+npm run dev
+```
 
-### Health & Info
+## 📋 Key Features
 
-- `GET /` - API information and documentation
-- `GET /health` - Health check endpoint
+- **Cheque Management:** Create, track, and manage cheques with status updates
+- **Cash Records:** Record and track cash transactions
+- **Payment Integration:** Accept online payments via Razorpay
+- **Email Notifications:** Automated reminders for pending cheques
+- **Dashboard Analytics:** Real-time statistics and insights
+- **Data Export:** Export reports to CSV
+- **Responsive Design:** Mobile-friendly interface
 
-### Cheques API (`/api/cheques`)
+## 📊 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/cheques` | Create a new cheque |
-| `GET` | `/api/cheques` | Get all cheques (with optional `?status=pending` filter) |
-| `GET` | `/api/cheques/:id` | Get single cheque by ID |
-| `PUT` | `/api/cheques/:id` | Update cheque |
-| `PATCH` | `/api/cheques/:id/status` | Update cheque status only |
-| `DELETE` | `/api/cheques/:id` | Delete cheque |
+### Core Endpoints
+- `GET /api/cheques` - List all cheques (supports status filtering)
+- `POST /api/cheques` - Create new cheque
+- `PUT /api/cheques/:id` - Update cheque details
+- `PATCH /api/cheques/:id/status` - Update cheque status
+- `GET /api/cash` - List cash records with pagination
+- `POST /api/cash` - Create cash entry
+- `GET /api/dashboard/summary` - Get dashboard statistics
+- `POST /api/payments/create-order` - Create Razorpay payment order
+- `POST /api/payments/verify` - Verify payment signature
 
-**Example - Create Cheque:**
+### Example Requests
+
+**Create Cheque:**
 ```json
 POST /api/cheques
 {
@@ -62,157 +82,72 @@ POST /api/cheques
   "payer_name": "ABC Construction",
   "cheque_date": "2025-01-01",
   "expected_clear_date": "2025-01-10",
-  "invoice_reference": "INV-2025-001",
-  "notes": "Monthly payment"
+  "invoice_reference": "INV-2025-001"
 }
 ```
 
-**Status Values:** `pending`, `deposited`, `cleared`, `bounced`
-
-### Cash Records API (`/api/cash`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/cash` | Create cash entry |
-| `GET` | `/api/cash` | Get all cash records (paginated, with optional filters) |
-| `GET` | `/api/cash/total` | Get total cash amount (with optional date range) |
-| `GET` | `/api/cash/:id` | Get single cash record by ID |
-| `PUT` | `/api/cash/:id` | Update cash record |
-| `DELETE` | `/api/cash/:id` | Delete cash record |
-
-**Query Parameters for GET /api/cash:**
-- `page` - Page number (default: 1)
-- `limit` - Records per page (default: 10, max: 100)
-- `startDate` - Filter from date (YYYY-MM-DD)
-- `endDate` - Filter to date (YYYY-MM-DD)
-- `reference_person` - Filter by person name
-
-**Example - Create Cash Record:**
+**Payment Order:**
 ```json
-POST /api/cash
+POST /api/payments/create-order
 {
   "amount": 25000,
-  "date": "2025-01-15",
-  "reference_person": "John Doe",
-  "purpose": "Advance payment",
   "invoice_reference": "INV-2025-001",
-  "notes": "Cash received"
-}
-```
-
-### Dashboard API (`/api/dashboard`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/dashboard/summary` | Get dashboard summary statistics |
-| `GET` | `/api/dashboard/pending-cheques` | Get pending cheques (sorted by urgency, limit 20) |
-| `GET` | `/api/dashboard/bounced-cheques` | Get all bounced cheques |
-| `GET` | `/api/dashboard/cash-today` | Get today's cash collection |
-| `GET` | `/api/dashboard/payment-status?invoice_id=123` | Get payment status by invoice |
-| `GET` | `/api/dashboard/monthly-stats?year=2025` | Get monthly statistics |
-
-**Dashboard Summary Response:**
-```json
-{
-  "data": {
-    "pending_cheques_count": 5,
-    "pending_cheques_amount": 250000,
-    "cleared_cheques_count": 10,
-    "cleared_cheques_amount": 500000,
-    "bounced_cheques_count": 1,
-    "bounced_cheques_amount": 50000,
-    "total_cash_collected_month": 75000,
-    "overdue_cheques": 2
+  "customerData": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+919876543210"
   }
 }
 ```
 
-### Export API (`/api/export`)
+## 🔧 Environment Variables
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/export/all-cheques?format=csv` | Export all cheques to CSV |
-| `GET` | `/api/export/cash-records?format=csv&month=2025-01` | Export cash records to CSV |
-| `GET` | `/api/export/pending-cheques?format=csv` | Export pending cheques to CSV |
-| `GET` | `/api/export/summary-report?format=csv&month=2025-01` | Export summary report to CSV |
+### Required for Production
+```bash
+PORT=5000
+NODE_ENV=production
+DATABASE_PATH=./cheques.db
+FRONTEND_URL=https://your-frontend-url.vercel.app
 
-All export endpoints require `format=csv` query parameter.
+# Razorpay (get from dashboard.razorpay.com)
+RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXXXXXX
+RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-## 🗄️ Database Schema
-
-### CHEQUES Table
-- `id` - INTEGER PRIMARY KEY
-- `cheque_number` - TEXT UNIQUE NOT NULL
-- `amount` - REAL NOT NULL
-- `payer_name` - TEXT NOT NULL
-- `cheque_date` - TEXT NOT NULL
-- `expected_clear_date` - TEXT
-- `actual_clear_date` - TEXT
-- `status` - TEXT DEFAULT 'pending' (pending/deposited/cleared/bounced)
-- `invoice_reference` - TEXT
-- `notes` - TEXT
-- `created_at` - TEXT DEFAULT CURRENT_TIMESTAMP
-- `updated_at` - TEXT DEFAULT CURRENT_TIMESTAMP
-
-### CASH_RECORDS Table
-- `id` - INTEGER PRIMARY KEY
-- `amount` - REAL NOT NULL
-- `date` - TEXT NOT NULL
-- `reference_person` - TEXT
-- `purpose` - TEXT
-- `invoice_reference` - TEXT
-- `notes` - TEXT
-- `created_at` - TEXT DEFAULT CURRENT_TIMESTAMP
+# Email (Resend API)
+RESEND_API_KEY=re_XXXXXXXXXXXXXXXXXXXX
+REMINDER_EMAIL=your-email@example.com
+ENABLE_REMINDERS=true
+```
 
 ## 📁 Project Structure
 
 ```
-cheque-management-backend/
-├── index.js                 # Main server file
-├── database.js              # Database initialization and connection
-├── package.json             # Dependencies and scripts
-├── .env                     # Environment variables
-├── .env.example            # Environment variables template
-├── routes/                  # API route definitions
-│   ├── cheques.js
-│   ├── cash.js
-│   ├── dashboard.js
-│   └── export.js
-├── controllers/            # Business logic handlers
-│   ├── chequeController.js
-│   ├── cashController.js
-│   ├── dashboardController.js
-│   └── exportController.js
-├── models/                  # Data access layer
-│   ├── cheque.js
-│   └── cashRecord.js
-└── middleware/              # Express middleware
-    └── errorHandler.js
+Payment/
+├── index.js                    # Backend server entry point
+├── database.js                 # SQLite database setup
+├── package.json                # Backend dependencies
+├── .env.example                # Environment template
+├── routes/                     # API routes
+├── controllers/                # Business logic
+├── models/                     # Data models
+├── services/                   # Payment services
+├── jobs/                       # Scheduled tasks
+└── cheque-management-frontend/ # Next.js frontend
+    ├── next.config.ts          # Next.js configuration
+    ├── lib/api.ts             # API client
+    ├── app/                   # App router pages
+    ├── components/            # React components
+    └── contexts/              # React contexts
 ```
 
-## 🔒 Security Features
+## 🛠️ Technologies
 
-- SQL injection prevention with prepared statements
-- CORS configuration for frontend access
-- Input validation on all endpoints
-- Error handling with proper HTTP status codes
-- Graceful shutdown handling
-
-## 🛠️ Technologies Used
-
-- **Express.js** - Web framework
-- **SQLite3** - Database
-- **fast-csv** - CSV export functionality
-- **morgan** - HTTP request logging
-- **cors** - Cross-origin resource sharing
-- **body-parser** - Request body parsing
-- **dotenv** - Environment variable management
+**Backend:** Express.js, SQLite3, Razorpay, Resend, node-cron
+**Frontend:** Next.js 16, TypeScript, Tailwind CSS, Radix UI, Axios
 
 ## 📝 Response Format
 
-All API responses follow this structure:
-
-**Success Response:**
+All APIs return consistent structure:
 ```json
 {
   "data": { ... },
@@ -220,101 +155,10 @@ All API responses follow this structure:
 }
 ```
 
-**Error Response:**
-```json
-{
-  "data": null,
-  "error": {
-    "message": "Error description",
-    "code": "ERROR_CODE"
-  }
-}
-```
-
-## 🧪 Testing Endpoints
-
-### Using cURL
-
-**Create a cheque:**
-```bash
-curl -X POST http://localhost:5000/api/cheques \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cheque_number": "CHQ001",
-    "amount": 50000,
-    "payer_name": "ABC Construction",
-    "cheque_date": "2025-01-01",
-    "expected_clear_date": "2025-01-10"
-  }'
-```
-
-**Get all cheques:**
-```bash
-curl http://localhost:5000/api/cheques
-```
-
-**Update cheque status:**
-```bash
-curl -X PATCH http://localhost:5000/api/cheques/1/status \
-  -H "Content-Type: application/json" \
-  -d '{"status": "cleared"}'
-```
-
-**Create cash record:**
-```bash
-curl -X POST http://localhost:5000/api/cash \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 25000,
-    "date": "2025-01-15",
-    "reference_person": "John Doe",
-    "purpose": "Advance payment"
-  }'
-```
-
-**Get dashboard summary:**
-```bash
-curl http://localhost:5000/api/dashboard/summary
-```
-
-**Export cheques to CSV:**
-```bash
-curl http://localhost:5000/api/export/all-cheques?format=csv -o cheques.csv
-```
-
-## 📄 License
-
-ISC
-
-## 👨‍💻 Development
-
-### Running in Development Mode
-
-```bash
-npm run dev
-```
-
-This uses `nodemon` to automatically restart the server on file changes.
-
-### Database Location
-
-The SQLite database file is created at: `./cheque_management.db`
-
-This file is automatically created on first run and is ignored by git (see `.gitignore`).
-
 ## 🚀 Deployment
 
-The application can be deployed to any Node.js hosting service. Ensure:
+This application is deployed as:
+- **Frontend:** Vercel (free tier)
+- **Backend:** Render (free tier)
+- **Database:** SQLite file storage
 
-1. Set `NODE_ENV=production` in your environment
-2. Configure proper CORS origins for your frontend
-3. Set up database backups (SQLite file)
-4. Configure proper logging and monitoring
-
-## 📊 Additional Notes
-
-- All timestamps are stored in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
-- Cheque numbers must be unique
-- Status updates automatically set `actual_clear_date` when status changes to `cleared`
-- Database has automatic timestamp triggers for `updated_at` field
-- Pagination defaults to 10 records per page, max 100
