@@ -25,7 +25,7 @@ interface ChequesTableProps {
   variant?: 'pending' | 'bounced' | 'all';
 }
 
-const defaultColumns = ['chequeNumber', 'amount', 'payerName', 'date', 'daysUntil'] as const;
+const defaultColumns: Array<'chequeNumber' | 'amount' | 'payerName' | 'date' | 'daysUntil'> = ['chequeNumber', 'amount', 'payerName', 'date', 'daysUntil'];
 
 export function ChequesTable({
   title,
@@ -37,14 +37,14 @@ export function ChequesTable({
   emptyMessage = `No ${title.toLowerCase()}`,
   variant = 'all'
 }: ChequesTableProps) {
-  const getDaysBadgeVariant = (days: number) => {
+  const getDaysBadgeVariant = (days: number): "default" | "secondary" | "destructive" | "outline" => {
     if (days < 0) return 'destructive';
-    if (days <= 3) return 'warning';
-    if (days <= 7) return 'secondary';
+    if (days <= 3) return 'secondary';
+    if (days <= 7) return 'outline';
     return 'default';
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'pending': return 'secondary';
       case 'cleared': return 'default';
