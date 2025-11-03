@@ -4,7 +4,7 @@ A full-stack application for managing cheques and cash records with real-time pa
 
 ## 🌐 Live Application
 
-**Frontend (Next.js):** https://cheque-management-frontend-24yh3wdwe-krockxzs-projects.vercel.app
+**Frontend (Next.js):** https://cheque-management-frontend-r9z4ctkc2-krockxzs-projects.vercel.app
 **Backend API (Express):** https://payment-yjxf.onrender.com
 
 ## 🏗️ Architecture
