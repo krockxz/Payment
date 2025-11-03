@@ -16,10 +16,14 @@ const nextConfig: NextConfig = {
   }),
   // Add proxy configuration for API calls
   async rewrites() {
+    const backendUrl = process.env.NODE_ENV === 'production'
+      ? 'https://payment-yjxf.onrender.com'
+      : 'http://localhost:5000';
+
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
