@@ -1,6 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { WarningSuppressor } from '@/components/WarningSuppressor';
 import { ChequeForm } from '@/components/ChequeForm';
 import { CashForm } from '@/components/CashForm';
 import ChequeCalendarView from '@/components/ChequeCalendarView';
@@ -12,20 +13,90 @@ import {
 } from '@/components/dashboard';
 import { dashboardAPI, chequeAPI, cashAPI, exportAPI } from '@/lib/api';
 import { toast } from 'sonner';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useModalState } from '@/hooks/useModalState';
-import type { ChequeFormData, CashFormData } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { useUserSettings } from '@/contexts/UserSettingsContext';
+import type { ChequeFormData, CashFormData, DashboardSummary, Cheque } from '@/lib/types';
+
+interface DashboardData {
+  summary: DashboardSummary | null;
+  pendingCheques: Cheque[];
+  bouncedCheques: Cheque[];
+}
+
+interface ModalState {
+  isChequeModalOpen: boolean;
+  isCashModalOpen: boolean;
+}
+
+const createEmptySummary = (): DashboardSummary => ({
+  pendingCheques: { count: 0, totalAmount: 0 },
+  clearedCheques: { count: 0, totalAmount: 0 },
+  bouncedCheques: { count: 0, totalAmount: 0 },
+  cashToday: 0,
+});
+
+const createEmptyDashboardData = (): DashboardData => ({
+  summary: createEmptySummary(),
+  pendingCheques: [],
+  bouncedCheques: [],
+});
 
 export default function DashboardPage() {
-  const { data, isLoading, refetch } = useDashboardData();
-  const { modalState, openChequeModal, closeChequeModal, openCashModal, closeCashModal } = useModalState();
+  const { settings: userSettings } = useUserSettings();
+
+  // Dashboard data state
+  const [data, setData] = useState<DashboardData>(createEmptyDashboardData());
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [modalState, setModalState] = useState<ModalState>({
+    isChequeModalOpen: false,
+    isCashModalOpen: false,
+  });
+
+  const fetchData = async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [summaryData, pendingData, bouncedData] = await Promise.all([
+        dashboardAPI.getDashboardSummary(),
+        dashboardAPI.getPendingCheques(),
+        dashboardAPI.getBouncedCheques(),
+      ]);
+
+      setData({
+        summary: summaryData || createEmptySummary(),
+        pendingCheques: Array.isArray(pendingData) ? pendingData : [],
+        bouncedCheques: Array.isArray(bouncedData) ? bouncedData : [],
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setData(createEmptyDashboardData());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Modal handlers
+  const openChequeModal = () => setModalState(prev => ({ ...prev, isChequeModalOpen: true }));
+  const closeChequeModal = () => setModalState(prev => ({ ...prev, isChequeModalOpen: false }));
+  const openCashModal = () => setModalState(prev => ({ ...prev, isCashModalOpen: true }));
+  const closeCashModal = () => setModalState(prev => ({ ...prev, isCashModalOpen: false }));
 
   const handleChequeSubmit = async (formData: ChequeFormData): Promise<void> => {
     try {
       await chequeAPI.createCheque(formData);
       toast.success('Cheque created successfully');
       closeChequeModal();
-      await refetch();
+      await fetchData();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create cheque';
       toast.error(errorMessage);
@@ -37,7 +108,7 @@ export default function DashboardPage() {
       await cashAPI.createCashRecord(formData);
       toast.success('Cash entry created successfully');
       closeCashModal();
-      await refetch();
+      await fetchData();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create cash entry';
       toast.error(errorMessage);
@@ -66,6 +137,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      <WarningSuppressor />
       <DashboardLayout
         title="Dashboard"
         subtitle="Monitor your payment collections and track cheque status"
@@ -78,13 +150,8 @@ export default function DashboardPage() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Calendar */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-card rounded-lg border p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  📅 Payment Calendar
-                </h2>
-                <ChequeCalendarView />
-              </div>
+            <div className="lg:col-span-2">
+              <ChequeCalendarView />
             </div>
 
             {/* Right Column - Quick Actions */}

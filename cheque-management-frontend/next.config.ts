@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Configure development options
+  ...(process.env.NODE_ENV === 'development' && {
+    logging: {
+      fetches: {
+        fullUrl: false,
+      },
+    },
+  }),
   // Add proxy configuration for API calls
   async rewrites() {
     return [

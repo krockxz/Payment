@@ -102,6 +102,44 @@ const initializeDatabase = () => {
                     reject(err);
                     return;
                 }
+            });
+
+            // Create user_settings table for storing user configuration
+            db.run(`
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT,
+                    name TEXT,
+                    phone TEXT,
+                    company_name TEXT,
+                    default_currency TEXT DEFAULT 'INR',
+                    email_notifications INTEGER DEFAULT 1,
+                    sms_notifications INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating user_settings table:', err.message);
+                    reject(err);
+                    return;
+                }
+                console.log('✅ User settings table created successfully.');
+            });
+
+            // Create trigger for updating user settings timestamp
+            db.run(`
+                CREATE TRIGGER IF NOT EXISTS update_user_settings_timestamp
+                AFTER UPDATE ON user_settings
+                BEGIN
+                    UPDATE user_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+                END
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating user settings trigger:', err.message);
+                    reject(err);
+                    return;
+                }
                 console.log('Database initialized successfully.');
                 resolve();
             });

@@ -10,22 +10,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, Calendar, AlertTriangle } from 'lucide-react';
+import { Eye, Calendar, AlertTriangle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { formatCurrency, formatDate, calculateDaysUntilClear } from '@/lib/formatters';
 import type { Cheque } from '@/lib/types';
 
 interface ChequesTableProps {
   title: string;
   cheques: Cheque[];
-  columns?: ('chequeNumber' | 'amount' | 'payerName' | 'date' | 'daysUntil' | 'status')[];
+  columns?: ('chequeNumber' | 'amount' | 'payerName' | 'date' | 'daysUntil' | 'status' | 'actions')[];
   maxHeight?: string;
   showViewAll?: boolean;
   onViewAll?: () => void;
   emptyMessage?: string;
   variant?: 'pending' | 'bounced' | 'all';
+  onEdit?: (cheque: Cheque) => void;
+  onDelete?: (chequeId: number) => void;
 }
 
 const defaultColumns: Array<'chequeNumber' | 'amount' | 'payerName' | 'date' | 'daysUntil'> = ['chequeNumber', 'amount', 'payerName', 'date', 'daysUntil'];
+
+const columnsWithActions: Array<'chequeNumber' | 'amount' | 'payerName' | 'date' | 'daysUntil' | 'actions'> = [...defaultColumns, 'actions'];
 
 export function ChequesTable({
   title,
@@ -35,7 +40,9 @@ export function ChequesTable({
   showViewAll = false,
   onViewAll,
   emptyMessage = `No ${title.toLowerCase()}`,
-  variant = 'all'
+  variant = 'all',
+  onEdit,
+  onDelete
 }: ChequesTableProps) {
   const getDaysBadgeVariant = (days: number): "default" | "secondary" | "destructive" | "outline" => {
     if (days < 0) return 'destructive';
@@ -95,6 +102,35 @@ export function ChequesTable({
           </Badge>
         );
 
+      case 'actions':
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => onEdit?.(cheque)}
+                className="cursor-pointer"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDelete?.(cheque.id)}
+                className="cursor-pointer text-destructive focus:text-destructive"
+                variant="destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+
       default:
         return null;
     }
@@ -135,6 +171,7 @@ export function ChequesTable({
                       {column === 'date' && (variant === 'bounced' ? 'Bounce Date' : 'Expected Clear')}
                       {column === 'daysUntil' && 'Days Until'}
                       {column === 'status' && 'Status'}
+                      {column === 'actions' && 'Actions'}
                     </TableHead>
                   ))}
                 </TableRow>

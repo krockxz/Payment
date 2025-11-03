@@ -44,6 +44,7 @@ const cashRoutes = require('./routes/cash');
 const dashboardRoutes = require('./routes/dashboard');
 const exportRoutes = require('./routes/export');
 const paymentRoutes = require('./routes/payments');
+const userSettingsRoutes = require('./routes/userSettings');
 
 // Import reminder job
 const reminderJob = require('./jobs/reminderJob');
@@ -54,6 +55,7 @@ app.use('/api/cash', cashRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/user/settings', userSettingsRoutes);
 
 // Initialize email reminder job
 if (process.env.ENABLE_REMINDERS === 'true') {

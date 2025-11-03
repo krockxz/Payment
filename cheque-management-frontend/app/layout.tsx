@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,13 +24,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable}>
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="w-full">
-            {children}
-          </main>
-        </SidebarProvider>
-        <Toaster position="top-right" richColors closeButton />
+        <UserSettingsProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <main className="w-full">
+              {children}
+            </main>
+          </SidebarProvider>
+          <Toaster position="top-right" richColors closeButton />
+        </UserSettingsProvider>
       </body>
     </html>
   );

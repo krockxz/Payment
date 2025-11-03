@@ -5,6 +5,14 @@ import { Calendar, dateFnsLocalizer, View, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { CalendarIcon, RefreshCwIcon, CheckCircle, Clock, AlertTriangle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const locales = {
   'en-US': enUS,
@@ -42,16 +50,12 @@ interface CalendarData {
   [date: string]: Cheque[];
 }
 
-interface ChequeCalendarViewProps {
-  defaultMonth?: Date;
-}
-
-const ChequeCalendarView: React.FC<ChequeCalendarViewProps> = ({ defaultMonth = new Date() }) => {
+const ChequeCalendarView: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
-  const [currentDate, setCurrentDate] = useState<Date>(defaultMonth);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
 
@@ -103,6 +107,7 @@ const ChequeCalendarView: React.FC<ChequeCalendarViewProps> = ({ defaultMonth = 
     } catch (err) {
       console.error('Error fetching calendar data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch calendar data');
+      toast.error('Failed to load calendar data');
     } finally {
       setLoading(false);
     }
@@ -185,214 +190,221 @@ const ChequeCalendarView: React.FC<ChequeCalendarViewProps> = ({ defaultMonth = 
         throw new Error('Failed to update cheque status');
       }
 
-      // Refresh calendar data
+      toast.success('Cheque status updated successfully');
       await fetchCalendarData(currentDate);
       setShowModal(false);
       setSelectedEvent(null);
 
     } catch (error) {
       console.error('Error updating cheque status:', error);
-      alert('Failed to update cheque status. Please try again.');
+      toast.error('Failed to update cheque status');
     }
   };
 
-  // Get status badge color
-  const getStatusBadgeColor = (status: string) => {
+  // Get status badge variant and icon
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-amber-100 text-amber-800';
+        return { variant: 'secondary' as const, icon: <Clock className="h-3 w-3" />, color: 'text-amber-600' };
       case 'deposited':
-        return 'bg-violet-100 text-violet-800';
+        return { variant: 'outline' as const, icon: <CalendarIcon className="h-3 w-3" />, color: 'text-violet-600' };
       case 'cleared':
-        return 'bg-emerald-100 text-emerald-800';
+        return { variant: 'default' as const, icon: <CheckCircle className="h-3 w-3" />, color: 'text-emerald-600' };
       case 'bounced':
-        return 'bg-red-100 text-red-800';
+        return { variant: 'destructive' as const, icon: <XCircle className="h-3 w-3" />, color: 'text-red-600' };
       default:
-        return 'bg-gray-100 text-gray-800';
+        return { variant: 'secondary' as const, icon: <Clock className="h-3 w-3" />, color: 'text-gray-600' };
     }
+  };
+
+  // Get days until due styling
+  const getDaysUntilStyle = (days: number) => {
+    if (days < 0) return { text: `${Math.abs(days)} days overdue`, className: 'text-red-600 font-semibold' };
+    if (days <= 3) return { text: `${days} days`, className: 'text-amber-600 font-semibold' };
+    return { text: `${days} days`, className: 'text-green-600' };
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      {/* Calendar Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">📅 Payment Calendar</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCurrentView(Views.MONTH)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              currentView === Views.MONTH
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Month
-          </button>
-          <button
-            onClick={() => setCurrentView(Views.WEEK)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              currentView === Views.WEEK
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => setCurrentView(Views.DAY)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              currentView === Views.DAY
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Day
-          </button>
-        </div>
-      </div>
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <CalendarIcon className="h-5 w-5" />
+            Payment Calendar
+          </CardTitle>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-amber-500 rounded"></div>
-          <span className="text-sm text-gray-600">Pending</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-violet-500 rounded"></div>
-          <span className="text-sm text-gray-600">Deposited</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-emerald-500 rounded"></div>
-          <span className="text-sm text-gray-600">Cleared</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded"></div>
-          <span className="text-sm text-gray-600">Bounced</span>
-        </div>
-      </div>
-
-      {/* Calendar */}
-      {loading ? (
-        <div className="flex justify-center items-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error: {error}</p>
-          <button
-            onClick={() => fetchCalendarData(currentDate)}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      ) : (
-        <div className="h-96">
-          <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            view={currentView}
-            onView={handleViewChange}
-            date={currentDate}
-            onNavigate={handleNavigate}
-            onSelectEvent={handleEventClick}
-            eventPropGetter={eventStyleGetter}
-            style={{ height: '100%' }}
-            popup
-          />
-        </div>
-      )}
-
-      {/* Event Details Modal */}
-      {showModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-800">
-                Cheque Details
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Cheque Number:</span>
-                <span className="font-medium">{selectedEvent.resource.cheque_number}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount:</span>
-                <span className="font-medium text-lg">₹{selectedEvent.resource.amount.toLocaleString('en-IN')}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Payer:</span>
-                <span className="font-medium">{selectedEvent.resource.payer_name}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Due Date:</span>
-                <span className="font-medium">
-                  {new Date(selectedEvent.resource.expected_clear_date).toLocaleDateString('en-IN')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Status:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(selectedEvent.resource.status)}`}>
-                  {selectedEvent.resource.status.charAt(0).toUpperCase() + selectedEvent.resource.status.slice(1)}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">Days Until Due:</span>
-                <span className={`font-medium ${
-                  selectedEvent.resource.daysUntilDue < 0
-                    ? 'text-red-600'
-                    : selectedEvent.resource.daysUntilDue <= 3
-                    ? 'text-amber-600'
-                    : 'text-green-600'
-                }`}>
-                  {selectedEvent.resource.daysUntilDue < 0
-                    ? `${Math.abs(selectedEvent.resource.daysUntilDue)} days overdue`
-                    : `${selectedEvent.resource.daysUntilDue} days`
-                  }
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <select
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                defaultValue={selectedEvent.resource.status}
-                onChange={(e) => updateChequeStatus(selectedEvent.resource.id, e.target.value)}
-              >
-                <option value="pending">Pending</option>
-                <option value="deposited">Deposited</option>
-                <option value="cleared">Cleared</option>
-                <option value="bounced">Bounced</option>
-              </select>
-
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-              >
-                Close
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={currentView === Views.MONTH ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView(Views.MONTH)}
+            >
+              Month
+            </Button>
+            <Button
+              variant={currentView === Views.WEEK ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView(Views.WEEK)}
+            >
+              Week
+            </Button>
+            <Button
+              variant={currentView === Views.DAY ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentView(Views.DAY)}
+            >
+              Day
+            </Button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+            <span className="text-sm text-muted-foreground">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-violet-500 rounded-full"></div>
+            <span className="text-sm text-muted-foreground">Deposited</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+            <span className="text-sm text-muted-foreground">Cleared</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span className="text-sm text-muted-foreground">Bounced</span>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {/* Calendar */}
+        {loading ? (
+          <div className="flex justify-center items-center h-96">
+            <RefreshCwIcon className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => fetchCalendarData(currentDate)} variant="outline">
+              <RefreshCwIcon className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <div className="h-96 p-4">
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              view={currentView}
+              onView={handleViewChange}
+              date={currentDate}
+              onNavigate={handleNavigate}
+              onSelectEvent={handleEventClick}
+              eventPropGetter={eventStyleGetter}
+              style={{ height: '100%' }}
+              popup
+            />
+          </div>
+        )}
+      </CardContent>
+
+      {/* Event Details Modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        {selectedEvent && (
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Cheque Details
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Cheque Number</p>
+                  <p className="font-mono font-medium">{selectedEvent.resource.cheque_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Amount</p>
+                  <p className="font-semibold text-lg">₹{selectedEvent.resource.amount.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm text-muted-foreground">Payer</p>
+                <p className="font-medium">{selectedEvent.resource.payer_name}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Due Date</p>
+                  <p className="font-medium">
+                    {new Date(selectedEvent.resource.expected_clear_date).toLocaleDateString('en-IN')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Days Until Due</p>
+                  <p className={getDaysUntilStyle(selectedEvent.resource.daysUntilDue).className}>
+                    {getDaysUntilStyle(selectedEvent.resource.daysUntilDue).text}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Status</p>
+                <Badge variant={getStatusInfo(selectedEvent.resource.status).variant} className="flex items-center gap-2 w-fit">
+                  {getStatusInfo(selectedEvent.resource.status).icon}
+                  {selectedEvent.resource.status.charAt(0).toUpperCase() + selectedEvent.resource.status.slice(1)}
+                </Badge>
+              </div>
+
+              {selectedEvent.resource.invoice_reference && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Invoice Reference</p>
+                  <p className="font-medium">{selectedEvent.resource.invoice_reference}</p>
+                </div>
+              )}
+
+              {selectedEvent.resource.notes && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Notes</p>
+                  <p className="text-sm">{selectedEvent.resource.notes}</p>
+                </div>
+              )}
+
+              <Separator />
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Update Status</p>
+                <Select
+                  defaultValue={selectedEvent.resource.status}
+                  onValueChange={(value) => updateChequeStatus(selectedEvent.resource.id, value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="deposited">Deposited</SelectItem>
+                    <SelectItem value="cleared">Cleared</SelectItem>
+                    <SelectItem value="bounced">Bounced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+    </Card>
   );
 };
 

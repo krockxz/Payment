@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -12,12 +17,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 
 interface TrendsData {
   months: string[];
@@ -151,6 +152,38 @@ const AnalyticsPage = () => {
     deposited: '#8B5CF6'
   };
 
+  // Chart configuration for shadcn theming
+  const chartConfig = {
+    clearedAmount: {
+      label: "Cleared Amount",
+      color: COLORS.cleared,
+    },
+    totalCheques: {
+      label: "Total Cheques",
+      color: COLORS.deposited,
+    },
+    bouncedCount: {
+      label: "Bounced Count",
+      color: COLORS.bounced,
+    },
+    pending: {
+      label: "Pending",
+      color: COLORS.pending,
+    },
+    cleared: {
+      label: "Cleared",
+      color: COLORS.cleared,
+    },
+    bounced: {
+      label: "Bounced",
+      color: COLORS.bounced,
+    },
+    deposited: {
+      label: "Deposited",
+      color: COLORS.deposited,
+    },
+  } satisfies ChartConfig;
+
   if (loading) {
     return (
       <div className="p-8 space-y-8">
@@ -182,16 +215,20 @@ const AnalyticsPage = () => {
   if (error) {
     return (
       <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Analytics</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchAnalyticsData}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error Loading Analytics</AlertTitle>
+          <AlertDescription className="mb-4">{error}</AlertDescription>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={fetchAnalyticsData}
+              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors inline-flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </button>
+          </div>
+        </Alert>
       </div>
     );
   }
@@ -288,7 +325,7 @@ const AnalyticsPage = () => {
         {/* Collection Trends - Line Chart */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Collection Trends (6 Months)</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ChartContainer config={chartConfig} className="h-[300px]">
             <LineChart data={lineChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
@@ -301,39 +338,30 @@ const AnalyticsPage = () => {
                 tickLine={{ stroke: '#666' }}
                 tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
               />
-              <Tooltip
-                formatter={(value: number, name: string) => [
-                  name === 'clearedAmount' ? formatCurrency(value) : value,
-                  name === 'clearedAmount' ? 'Cleared Amount' :
-                  name === 'totalCheques' ? 'Total Cheques' : 'Bounced Count'
-                ]}
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-              />
-              <Legend />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
               <Line
                 type="monotone"
                 dataKey="clearedAmount"
-                stroke="#10B981"
+                stroke="var(--color-clearedAmount)"
                 strokeWidth={3}
-                dot={{ fill: '#10B981', r: 4 }}
-                name="Cleared Amount"
+                dot={{ fill: 'var(--color-clearedAmount)', r: 4 }}
               />
               <Line
                 type="monotone"
                 dataKey="totalCheques"
-                stroke="#8B5CF6"
+                stroke="var(--color-totalCheques)"
                 strokeWidth={2}
-                dot={{ fill: '#8B5CF6', r: 3 }}
-                name="Total Cheques"
+                dot={{ fill: 'var(--color-totalCheques)', r: 3 }}
               />
             </LineChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
 
         {/* Status Distribution - Pie Chart */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Status Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ChartContainer config={chartConfig} className="h-[300px]">
             <PieChart>
               <Pie
                 data={pieChartData}
@@ -352,18 +380,15 @@ const AnalyticsPage = () => {
                   />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value: number) => [formatCurrency(value), 'Amount']}
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-              />
+              <ChartTooltip content={<ChartTooltipContent />} />
             </PieChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
 
         {/* Top Payers - Bar Chart */}
         <div className="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Top Payers by Amount</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ChartContainer config={chartConfig} className="h-[300px]">
             <BarChart
               data={topPayers}
               layout="horizontal"
@@ -383,21 +408,14 @@ const AnalyticsPage = () => {
                 tickLine={{ stroke: '#666' }}
                 width={80}
               />
-              <Tooltip
-                formatter={(value: number, name: string) => [
-                  name === 'total_amount' ? formatCurrency(value) : value,
-                  name === 'total_amount' ? 'Total Amount' : 'Cheque Count'
-                ]}
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-              />
+              <ChartTooltip content={<ChartTooltipContent />} />
               <Bar
                 dataKey="total_amount"
                 fill="#3B82F6"
                 radius={[0, 8, 8, 0]}
-                name="Total Amount"
               />
             </BarChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
 
       </div>

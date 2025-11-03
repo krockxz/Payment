@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Loader2, Smartphone } from 'lucide-react';
+import { useUserSettings } from '@/contexts/UserSettingsContext';
 
 interface PaymentButtonProps {
   amount: number;
@@ -36,6 +37,16 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
+  const { settings: userSettings } = useUserSettings();
+
+  // Get effective customer data (use configured email as fallback)
+  const getEffectiveCustomerData = () => {
+    return {
+      name: customerData.name || userSettings.name || 'Guest User',
+      email: customerData.email || userSettings.email || '',
+      phone: customerData.phone || userSettings.phone || ''
+    };
+  };
 
   // Load Razorpay script
   useEffect(() => {
@@ -90,6 +101,8 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       // Show loading toast
       const loadingToastId = toast.loading('Creating payment order...');
 
+      const effectiveCustomerData = getEffectiveCustomerData();
+
       // Create payment order
       const orderResponse = await fetch('/api/payments/create-order', {
         method: 'POST',
@@ -100,11 +113,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
           amount,
           invoiceReference,
           chequeId,
-          customerData: {
-            name: customerData.name || 'Guest User',
-            email: customerData.email || '',
-            phone: customerData.phone || ''
-          }
+          customerData: effectiveCustomerData
         }),
       });
 
@@ -127,11 +136,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         name: 'Cheque Management System',
         description: invoiceReference ? `Payment for Invoice: ${invoiceReference}` : 'UPI Payment',
         order_id: order.order_id,
-        prefill: {
-          name: customerData.name || '',
-          email: customerData.email || '',
-          contact: customerData.phone || ''
-        },
+        prefill: effectiveCustomerData,
         theme: {
           color: '#10B981' // Green theme
         },
